@@ -19,7 +19,7 @@
 //    Worker — الإرسال يدوي بالكامل من رقم موظف المتابعة.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME      = 'bosta_delivery_follow_up';
-const WORKER_VERSION = '1.0.0';
+const WORKER_VERSION = '1.0.1';
 
 // ══════════════════════════════════════════════════════════════
 // §CONSTANTS
@@ -268,17 +268,23 @@ function logParamsFrom(url, tool) {
 // ⚠️ التوكن مشترك بين كل Workers الستاك — الفشل العابر لازم يتعافى (⑯).
 const OAUTH_MAX_ATTEMPTS = 3;
 
+// 🔴 القيم بتتنضّف من المسافات/السطر الجديد (لصق سر من الداشبورد بيجيب `\n` أو مسافة أوقات)،
+//    ورسالة الفشل فيها **سبب شوبيفاي** (`invalid_client` …) — «OAuth failed: 400» لوحدها
+//    ماكانتش بتفرّق بين سر غلط ودومين غلط وتطبيق مش متثبّت. (الرد مفيهوش أي سر.)
+const cleanEnv = (v) => String(v ?? '').trim();
+
 async function getAccessToken(env) {
   let lastErr = null;
   for (let attempt = 1; attempt <= OAUTH_MAX_ATTEMPTS; attempt++) {
     try {
-      const resp = await fetch(`https://${env.SHOP_DOMAIN}/admin/oauth/access_token`, {
+      const resp = await fetch(`https://${cleanEnv(env.SHOP_DOMAIN)}/admin/oauth/access_token`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: env.CLIENT_ID, client_secret: env.CLIENT_SECRET, grant_type: 'client_credentials' }),
+        body: JSON.stringify({ client_id: cleanEnv(env.CLIENT_ID), client_secret: cleanEnv(env.CLIENT_SECRET), grant_type: 'client_credentials' }),
       });
       if (!resp.ok) {
         const retriable = resp.status === 429 || resp.status >= 500;
-        lastErr = new Error(`OAuth failed: ${resp.status}`);
+        const detail = (await resp.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160);
+        lastErr = new Error(`OAuth failed: ${resp.status}${detail ? ' — ' + detail : ''}`);
         if (retriable && attempt < OAUTH_MAX_ATTEMPTS) { await new Promise(r => setTimeout(r, 700 * attempt)); continue; }
         throw lastErr;
       }
