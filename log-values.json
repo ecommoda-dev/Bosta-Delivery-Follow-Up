@@ -5,17 +5,7 @@
     "wa_opened": {
       "result": null,
       "stage": null,
-      "desc": "الموظف داس «فتح واتساب» على شحنة متأجلة — الحالة بقت sent (extra: trackingNumber · eventId — بلا تليفون)"
-    },
-    "followup_result": {
-      "result": null,
-      "stage": null,
-      "desc": "الموظف سجّل نتيجة رد العميل (extra.result: ok · other_day · not_requested · cancel · other · no_reply · no_wa · skip)"
-    },
-    "followup_reopen": {
-      "result": null,
-      "stage": null,
-      "desc": "إعادة فتح متابعة اتسجّلت غلط — الحالة رجعت pending"
+      "desc": "الموظف داس «فتح واتساب» على شحنة تحت التوصيل (محاولة ≥ 1) — كل ضغطة سجل إرسال في bosta_followup_sends (valueBefore/After = عدد مرات الإرسال · extra: trackingNumber · attempts — بلا تليفون ولا اسم ولا نص رسالة)"
     }
   }
 }
