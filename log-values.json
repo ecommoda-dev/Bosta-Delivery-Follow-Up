@@ -1,0 +1,21 @@
+{
+  "tool": "bosta_delivery_follow_up",
+  "since": "index.js v1.0.0",
+  "types": {
+    "wa_opened": {
+      "result": null,
+      "stage": null,
+      "desc": "الموظف داس «فتح واتساب» على شحنة متأجلة — الحالة بقت sent (extra: trackingNumber · eventId — بلا تليفون)"
+    },
+    "followup_result": {
+      "result": null,
+      "stage": null,
+      "desc": "الموظف سجّل نتيجة رد العميل (extra.result: ok · other_day · not_requested · cancel · other · no_reply · no_wa · skip)"
+    },
+    "followup_reopen": {
+      "result": null,
+      "stage": null,
+      "desc": "إعادة فتح متابعة اتسجّلت غلط — الحالة رجعت pending"
+    }
+  }
+}

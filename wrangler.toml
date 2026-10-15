@@ -1,0 +1,40 @@
+name               = "bosta-delivery-follow-up-worker"
+main               = "index.js"
+compatibility_date = "2025-01-01"
+workers_dev        = true
+
+[observability]
+enabled = true
+
+# ─────────────────────────────────────────────────────────────
+# 🔴 الريبو ده **Worker وبس** — الواجهة (`Bosta-Delivery-Follow-Up.html`) عايشة في ريبو
+#    الهب `Delivery-COD-Operations-Center` (نفس نمط Courier-Names / Partial-Delivery).
+#
+# 🔴 Build watch paths إلزامية — chip لكل واحد (الحقل chips مش نص):
+#      Include paths : index.js
+#                      wrangler.toml
+#    الاتنين في سطر واحد = chip واحد باسم مش موجود = الـ Worker بيتجمّد بصمت.
+#    ⚠️ والتحقق في الاتجاهين: تعديل README/CLAUDE.md مايبنيش، وتعديل index.js يبني.
+#    ⚠️ أي ملف جديد يعتمد عليه الـ Worker لازم يتضاف للـ paths.
+# ─────────────────────────────────────────────────────────────
+
+# نفس D1 المشتركة. الأداة بتقرا جدول المستقبل `bosta_webhook_events` (قراءة بس)
+# وبتكتب في جدولها `bosta_delivery_followups` + `logs`.
+[[d1_databases]]
+binding       = "DB"
+database_name = "ecommoda-dev-logs"
+database_id   = "90db62d3-bd7e-4d92-912b-10fc78eeb565"
+
+[vars]
+SHOP_DOMAIN = "6c7e1a-53.myshopify.com"
+
+# ─────────────────────────────────────────────────────────────
+# الأسرار — Dashboard → Settings → Variables → علّم "Secret". ممنوع في الريبو.
+# ⚠️ بعد إضافة أي سر → Version History → ⋯ → **Promote**.
+#
+# WORKER_SECRET  ← 🔴 قيمة مجموعة `delivery_cod_ops` (الـ Worker العاشر في المجموعة)
+#                   + تسجيل العضوية في `ecommoda-constants` → secret-groups.md
+# CLIENT_ID / CLIENT_SECRET ← نفس الـ Custom App المشترك (constants §1)
+#                   + لازم عنده read_orders و**Protected customer data** (اسم/تليفون)
+#                   — `?action=diag` بيقول.
+# ─────────────────────────────────────────────────────────────
