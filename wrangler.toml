@@ -3,10 +3,8 @@ main               = "index.js"
 compatibility_date = "2025-01-01"
 workers_dev        = true
 
-
 [observability]
 enabled = true
-
 
 # ─────────────────────────────────────────────────────────────
 # 🔴 الريبو ده **Worker وبس** — الواجهة (`Bosta-Delivery-Follow-Up.html`) عايشة في ريبو
