@@ -4,11 +4,13 @@
 
 **بتعمل إيه:** قايمة يومية بشحنات بوسطة اللي العميل طلب **تأجيلها** (`exception_code = 3`) ولسه ما اتقفلتش.
 موظف متابعة الشحن بيبعت لكل عميل رسالة واتساب **يدوي من رقمه هو**، والأداة بتسجّل النتيجة بس.
-**الإصدار:** `1.0.1` (`WORKER_VERSION`)
+**الإصدار:** `2.0.0` (`WORKER_VERSION`)
 
 > 🔴 **الريبو ده Worker وبس.** الواجهة `Bosta-Delivery-Follow-Up.html` عايشة في ريبو الهب
 > `Delivery-COD-Operations-Center` (نفس نمط `Courier-Names` / `Partial-Delivery`). أي تعديل على الشاشة بيتعمل هناك.
 > ⛔ **مفيش إرسال واتساب من الـ Worker** — لا API ولا Cloud API. الرسالة بتتفتح بزرار `api.whatsapp.com` في الواجهة.
+
+> 🔴 **v2.0.0 (15-10-2026) — بيلغي أي وصف تحت لحالات المتابعة/النتايج/`eventId`/`days`:** القايمة = كل شحنة تحت التوصيل (آخر حدث مش 45/46/48 ولا RTO) وأعلى `number_of_attempts` ≥ 1، نشاط آخر `WINDOW_DAYS = 60` يوم (`openListCTE()`). الأداة **إرسال بس**: `record` = `{employee, items:[{trackingNumber}], message}` → صف في `bosta_followup_sends` (الجدول القديم `bosta_delivery_followups` متساب ومابيتقراش). `get_sends?trackingNumber=` للتفاصيل. `queue_summary` = `{total, unsent, sent}`. نص الرسالة بيتخزّن باسم مستبدل بـ`{name}` وأرقام الموبايل بتتشال (`sanitizeMessage`). ضغطة مزدوجة (نفس الموظف ١٥ ث) = `deduped`. `log type`: `wa_opened` بس. اتفحص على SQLite حقيقي (٤٨ بند) + شوبيفاي وهمية؛ ما اتجرّبش على D1 الحقيقي.
 
 ## الروابط
 
