@@ -4,7 +4,7 @@
 
 **بتعمل إيه:** قايمة يومية بشحنات بوسطة اللي العميل طلب **تأجيلها** (`exception_code = 3`) ولسه ما اتقفلتش.
 موظف متابعة الشحن بيبعت لكل عميل رسالة واتساب **يدوي من رقمه هو**، والأداة بتسجّل النتيجة بس.
-**الإصدار:** `2.0.0` (`WORKER_VERSION`)
+**الإصدار:** `2.1.0` (`WORKER_VERSION`)
 
 > 🔴 **الريبو ده Worker وبس.** الواجهة `Bosta-Delivery-Follow-Up.html` عايشة في ريبو الهب
 > `Delivery-COD-Operations-Center` (نفس نمط `Courier-Names` / `Partial-Delivery`). أي تعديل على الشاشة بيتعمل هناك.
@@ -27,6 +27,7 @@ tool في D1 : bosta_delivery_follow_up   ← wa_opened · followup_result · fo
 | `get_config` | GET | `{ version }` لحارس النسخة |
 | `diag` | GET | الأسرار (أسماء/أطوال/بصمة) · D1 · **قراءة تجريبية من `bosta_webhook_events`** · OAuth · `read_orders` · **بيانات العميل راجعة ولا `null`** · `throttleStatus` و`actualQueryCost` |
 | `get_followups&days=N` | GET | القايمة + بيانات شوبيفاي + حالة المتابعة (افتراضي 3 أيام، أقصى 14) |
+| `get_events&trackingNumber=` | GET | (v2.1.0) سجل أحداث بوسطة لرقم تتبع (آخر 200 · أعمدة صريحة · بلا `raw_payload`) — لزرار «عرض السجل» في الواجهة |
 | `queue_summary&days=N` | GET | عدّادات الرئيسية بـ SQL مجمّع **بلا شوبيفاي** |
 | `record` | POST | `{ employee, action: opened\|result\|reopen, trackingNumber, eventId \| items[], result?, note? }` |
 | `get_logs` · `get_logs_count` · `get_logs_export` | GET | من §SHARED |
