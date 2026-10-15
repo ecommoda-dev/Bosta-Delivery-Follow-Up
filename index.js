@@ -42,10 +42,10 @@ const MAX_RECORD_ITEMS = 20;     // حارس لصق على record بـ items[]
 
 const STATUSES = ['pending', 'sent', 'replied', 'closed', 'skipped'];
 const RESULTS  = ['ok', 'other_day', 'not_requested', 'cancel', 'other', 'no_reply', 'no_wa', 'skip'];
-// نتيجة بتقفل المتابعة نهائيًا (باقي النتايج = replied: لسه محتاج تصرّف أو متابعة)
+// نتيجة بتقفل المتابعة نهائيًا. أي نتيجة تانية = status 'replied' = «محتاجين تصرّف»
+// (ميعاد تاني · مطلبتش تأجيل · إلغاء · رد تاني · مفيش رد) — تاب الصفحة وعدّاد الرئيسية
+// بيعدّوا `replied` بالظبط، فمفيش تعريف تاني يفترق.
 const CLOSING_RESULTS = new Set(['ok', 'skip', 'no_wa']);
-// نتايج «محتاجين تصرّف» — لازم تتطابق مع queue_summary
-const ACTION_RESULTS  = ['other_day', 'not_requested', 'cancel'];
 
 // ══════════════════════════════════════════════════════════════
 // §CORS — Option B (قايمة صارمة)
@@ -510,17 +510,16 @@ async function handleGetFollowups(env, url, request) {
 
 // ─── §FOLLOWUP::queue_summary — عدّادات الرئيسية بـ SQL مجمّع بلا شوبيفاي ───
 // pending = مالوش صف متابعة أو status=pending · sent = مستني رد
-// needsAction = رد بنتيجة محتاجة تصرّف (ميعاد تاني/مطلبتش/إلغاء) ولسه ما اتقفلش
+// needsAction = status 'replied' (نتيجة محتاجة تصرّف ولسه ما اتقفلتش)
 // ⚠️ الوحدة «شحنة» مش «عميل» — التجميع بالتليفون في الصفحة بس (التليفون من شوبيفاي).
 async function handleQueueSummary(env, url, request) {
   await ensureSchema(env.DB);
   const days = clampInt(url.searchParams.get('days'), DEFAULT_WINDOW_DAYS, 1, MAX_WINDOW_DAYS);
-  const actionIn = ACTION_RESULTS.map(r => `'${r}'`).join(',');
   const sql = openListCTE() +
     ` SELECT COUNT(*) AS total, ` +
     `COALESCE(SUM(CASE WHEN f.id IS NULL OR f.status='pending' THEN 1 ELSE 0 END),0) AS pending, ` +
     `COALESCE(SUM(CASE WHEN f.status='sent' THEN 1 ELSE 0 END),0) AS sent, ` +
-    `COALESCE(SUM(CASE WHEN f.status='replied' AND f.result IN (${actionIn}) THEN 1 ELSE 0 END),0) AS needs_action ` +
+    `COALESCE(SUM(CASE WHEN f.status='replied' THEN 1 ELSE 0 END),0) AS needs_action ` +
     `FROM open_list o LEFT JOIN bosta_delivery_followups f ON f.tracking_number = o.tracking_number AND f.event_id = o.last_pp_id`;
   const r = await env.DB.prepare(sql).bind(windowStartISO(days)).first();
   return json({
@@ -623,9 +622,10 @@ async function handleRecord(env, request) {
   const results = [];
   for (const it of items) results.push(await recordOne(env, employee, action, it, payload));
 
-  const anyOk = results.some(r => r.ok);
-  const status = results.every(r => r.ok) ? 200 : (anyOk ? 207 : (results[0]?.status || 400));
-  return json({ ok: results.every(r => r.ok), results }, status, request);
+  // 🔴 HTTP 200 دايمًا لما الطلب نفسه سليم — الفشل **جوّه** results[i] (ok:false + status 409/400).
+  //    كود 4xx على الرد كله بيخلّي `dcoApi` يرمي «HTTP 409» والواجهة تقول «التسجيل فشل» بدل
+  //    «حدّث القايمة»، ويضيّع نتيجة العناصر اللي نجحت في نفس الدفعة.
+  return json({ ok: results.every(r => r.ok), results }, 200, request);
 }
 
 // ══════════════════════════════════════════════════════════════

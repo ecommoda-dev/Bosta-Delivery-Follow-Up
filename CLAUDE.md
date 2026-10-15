@@ -47,7 +47,7 @@ tool في D1 : bosta_delivery_follow_up   ← wa_opened · followup_result · fo
 
 - `status`: `pending` · `sent` · `replied` · `closed` · `skipped`
 - `result`: `ok` · `other_day` · `not_requested` · `cancel` · `other` · `no_reply` · `no_wa` · `skip`
-  - `ok`/`skip`/`no_wa` → `closed` · الباقي → `replied`. «محتاجين تصرّف» = `replied` + (`other_day`/`not_requested`/`cancel`).
+  - `ok`/`skip`/`no_wa` → `closed` · الباقي → `replied`. «محتاجين تصرّف» = `replied` (أي نتيجة غير الثلاثة المقفولة).
 - `UNIQUE(tracking_number, event_id)` + `INSERT OR IGNORE` → **ضغطتين على «فتح واتساب» = صف واحد**، و`opened` مابترجّعش حالة متقدمة للخلف.
 - 🔴 **ممنوع تخزين اسم/تليفون/عنوان** — هنا ولا في `logs` (قانون حماية البيانات، مهلة التوفيق ~31-10/1-11-2026). `sent_to` **مش موجود** عمدًا.
 
@@ -56,7 +56,7 @@ tool في D1 : bosta_delivery_follow_up   ← wa_opened · followup_result · fo
 1. ⛔ **`bosta_webhook_events` قراءة بس** — لا كتابة ولا schema ولا فهرس. جدول أداة تانية (`Bosta-Webhook-Status-Receiver`)؛ أي عمود يتغيّر هناك بيوقع القايمة هنا. الأعمدة المعتمدة: `id` · `tracking_number` · `state` · `exception_code` · `bosta_timestamp` · `received_at` · `description` · `business_reference` · `matched_slot` · `bosta_type` · `delivery_promise_date` · `number_of_attempts` · `shopify_order_id`. ⛔ ممنوع `SELECT *` عليه (فيه `raw_payload`).
 2. **«علّم متشيلش»:** أوردر ملغي على شوبيفاي (`cancelled`) · مالوش `shopify_order_id` · مفيش موبايل صالح → بيتعرض بعلامة مش بيختفي.
 3. **فشل شوبيفاي مايسقّطش القايمة:** الرد فيه `shopifyError` والصفوف بتتعرض بدون بيانات عميل — والواجهة بتحذّر. (الفشل الصامت ممنوع.)
-4. **`record` — العقد:** `items[]` اختياري (مجموعة نفس التليفون)، والرد `results[]` **نتيجة لكل عنصر بنفس الترتيب**. شحنة اتقفلت أو جالها تأجيل أحدث = `409` «حدّث القايمة». فشل `writeLog` بعد الكتابة = `logged:false` مش 500.
+4. **`record` — العقد:** `items[]` اختياري (مجموعة نفس التليفون)، والرد `results[]` **نتيجة لكل عنصر بنفس الترتيب**. الرد **HTTP 200 دايمًا** لو الطلب نفسه سليم (400 بس لـ body باظ) — والفشل جوّه `results[i]` (`ok:false` + `status`)؛ شحنة اتقفلت أو جالها تأجيل أحدث = `status:409` «حدّث القايمة». ⛔ مش 4xx على الرد كله: `dcoApi` بيرميه «HTTP 409» ويضيّع نتايج العناصر اللي نجحت. فشل `writeLog` بعد الكتابة = `logged:false` مش 500.
 5. `deliveryPromiseDate` بيرجع **خام `DD-MM-YYYY`** — الواجهة بتحوّله يدوي (`new Date()` عليه ممنوع) ومابتذكرهوش لو فات.
 6. `ITEMS_PER_QUERY = 25` **غير مقيس** — اشتقّه من `actualQueryCost` في `diag` بعد أول قياس حي.
 7. CORS Option B (الرد فيه أسماء وتليفونات).
