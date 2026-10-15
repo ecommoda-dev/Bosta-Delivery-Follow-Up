@@ -23,7 +23,7 @@
 //    Worker — الإرسال يدوي بالكامل من رقم موظف المتابعة.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME      = 'bosta_delivery_follow_up';
-const WORKER_VERSION = '2.0.0';
+const WORKER_VERSION = '2.1.0';
 
 // ══════════════════════════════════════════════════════════════
 // §CONSTANTS
@@ -558,6 +558,18 @@ async function handleGetSends(env, url, request) {
   }, 200, request);
 }
 
+// ─── §FOLLOWUP::get_events — سجل أحداث بوسطة لرقم تتبع (الأحدث فوق) — قراءة بس ───
+// أعمدة صريحة من bosta_webhook_events، ⛔ مفيش raw_payload ولا SELECT *.
+async function handleGetEvents(env, url, request) {
+  const tn = String(url.searchParams.get('trackingNumber') || '').trim();
+  if (!tn) return json({ ok: false, error: 'trackingNumber مطلوب' }, 400, request);
+  const { results } = await env.DB.prepare(
+    `SELECT id, state, description, exception_reason, number_of_attempts, bosta_type, bosta_timestamp, received_at, business_reference ` +
+    `FROM bosta_webhook_events WHERE tracking_number = ? ORDER BY bosta_timestamp DESC, received_at DESC, id DESC LIMIT 200`
+  ).bind(tn).all();
+  return json({ ok: true, trackingNumber: tn, events: results }, 200, request);
+}
+
 // ─── §FOLLOWUP::record — تسجيل إن رسالة اتبعتت (فتح واتساب) ───
 // 🔴 **كل ضغطة = صف** — الهدف نفسه العدّ («اتبعتت كام مرة»). الحماية من الضغطة المزدوجة: نفس
 //    الموظف على نفس الرقم خلال `SEND_DEDUPE_MS` = مش بيتسجّل تاني (`deduped:true`).
@@ -758,6 +770,7 @@ export default {
       if (action === 'get_followups') return await handleGetFollowups(env, request);
       if (action === 'queue_summary') return await handleQueueSummary(env, request);
       if (action === 'get_sends')     return await handleGetSends(env, url, request);
+      if (action === 'get_events')    return await handleGetEvents(env, url, request);
       if (action === 'record') {
         if (request.method !== 'POST') return json({ error: 'POST required' }, 405, request);
         return await handleRecord(env, request);
