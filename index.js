@@ -23,7 +23,7 @@
 //    Worker — الإرسال يدوي بالكامل من رقم موظف المتابعة.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME      = 'bosta_delivery_follow_up';
-const WORKER_VERSION = '2.1.0';
+const WORKER_VERSION = '2.2.0';
 
 // ══════════════════════════════════════════════════════════════
 // §CONSTANTS
@@ -431,6 +431,8 @@ async function ensureSchema(db) {
 // 🔴 مش بيفرّق سبب الفشل (تأجيل · العميل مش موجود · مش بيرد …) — كل شحنة جرّبوا يوصّلوها ولسه ما اتسلّمتش.
 // ⚠️ ?1 = ISO بداية نافذة النشاط (`WINDOW_DAYS`): رقم تتبع ما جاله ولا حدث بعدها بيطلع بره — النافذة
 //    **معلنة** في الرد (`windowDays`) وفي الشاشة. الفلتر على received_at عشان يستخدم idx_bwe_received_at.
+//    🔴 v2.2.0: «RTO» هنا = In-Return = نوعها RTO، أو EXCHANGE وعليها حدث 23 (Picked up from consignee) —
+//    نفس تعريف تاب In-Return في «متابعة شحنات بوسطة» (طلب أحمد 25-10-2026).
 //    ⚠️ الاستبعاد النهائي/RTO بيتحسب على **كل** تاريخ الرقم مش النافذة بس (JOIN على رقم التتبع).
 // ⚠️ `attempts` = MAX(number_of_attempts) على كل أحداث الرقم — أمتن من آخر حدث لو آخر حدث جه بلا القيمة.
 // ⚠️ `last_exc_code` / `last_reason` = كود وسبب **آخر حدث Exception (47)** على الرقم — بيحدد صيغة الرسالة
@@ -438,7 +440,7 @@ async function ensureSchema(db) {
 // ⛔ ممنوع SELECT * على bosta_webhook_events (فيه raw_payload كبير) — أعمدة صريحة.
 function openListCTE() {
   return `WITH base AS (SELECT tracking_number FROM bosta_webhook_events WHERE received_at >= ?1 AND tracking_number IS NOT NULL AND tracking_number <> '' GROUP BY tracking_number), ` +
-    `agg AS (SELECT e.tracking_number, MAX(e.number_of_attempts) AS attempts, MAX(CASE WHEN e.state IN (${FINAL_STATES.join(',')}) THEN 1 ELSE 0 END) AS fin, MAX(CASE WHEN UPPER(COALESCE(e.bosta_type,''))='RTO' THEN 1 ELSE 0 END) AS rto FROM bosta_webhook_events e JOIN base USING(tracking_number) GROUP BY e.tracking_number), ` +
+    `agg AS (SELECT e.tracking_number, MAX(e.number_of_attempts) AS attempts, MAX(CASE WHEN e.state IN (${FINAL_STATES.join(',')}) THEN 1 ELSE 0 END) AS fin, MAX(CASE WHEN UPPER(COALESCE(e.bosta_type,''))='RTO' OR (UPPER(COALESCE(e.bosta_type,''))='EXCHANGE' AND e.state=23) THEN 1 ELSE 0 END) AS rto FROM bosta_webhook_events e JOIN base USING(tracking_number) GROUP BY e.tracking_number), ` +
     `lt AS (SELECT e.tracking_number, e.state, e.description, e.business_reference, e.matched_slot, e.bosta_type, e.delivery_promise_date, e.shopify_order_id, e.cod, e.received_at AS last_at, e.bosta_timestamp AS last_ts, ROW_NUMBER() OVER (PARTITION BY e.tracking_number ORDER BY e.bosta_timestamp DESC, e.received_at DESC, e.id DESC) rn FROM bosta_webhook_events e JOIN base USING(tracking_number)), ` +
     `ex AS (SELECT e.tracking_number, e.exception_code, e.exception_reason, e.received_at AS ex_at, ROW_NUMBER() OVER (PARTITION BY e.tracking_number ORDER BY e.bosta_timestamp DESC, e.received_at DESC, e.id DESC) rn FROM bosta_webhook_events e JOIN base USING(tracking_number) WHERE e.state=${STATE_EXCEPTION}), ` +
     `open_list AS (SELECT lt.tracking_number, lt.state, lt.description, lt.business_reference, lt.matched_slot, lt.bosta_type, lt.delivery_promise_date, lt.shopify_order_id, lt.cod, lt.last_at, lt.last_ts, agg.attempts, ex.exception_code AS last_exc_code, ex.exception_reason AS last_reason, ex.ex_at AS last_exc_at ` +
