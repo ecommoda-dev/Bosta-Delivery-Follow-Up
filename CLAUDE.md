@@ -4,7 +4,7 @@
 
 **بتعمل إيه:** قايمة يومية بشحنات بوسطة اللي العميل طلب **تأجيلها** (`exception_code = 3`) ولسه ما اتقفلتش.
 موظف متابعة الشحن بيبعت لكل عميل رسالة واتساب **يدوي من رقمه هو**، والأداة بتسجّل النتيجة بس.
-**الإصدار:** `2.1.0` (`WORKER_VERSION`)
+**الإصدار:** `2.2.0` (`WORKER_VERSION`)
 
 > 🔴 **الريبو ده Worker وبس.** الواجهة `Bosta-Delivery-Follow-Up.html` عايشة في ريبو الهب
 > `Delivery-COD-Operations-Center` (نفس نمط `Courier-Names` / `Partial-Delivery`). أي تعديل على الشاشة بيتعمل هناك.
@@ -36,7 +36,7 @@ tool في D1 : bosta_delivery_follow_up   ← wa_opened · followup_result · fo
 
 ## 🔴 تعريف القايمة — مكانه `openListCTE()` في `index.js` بس
 
-شحنة **فيها حدث `state=47 AND exception_code='3'` في آخر N أيام**، و**مفيش** عليها `state IN (45,46,48)` ولا `bosta_type='RTO'` في أي وقت.
+شحنة **فيها حدث `state=47 AND exception_code='3'` في آخر N أيام**، و**مفيش** عليها `state IN (45,46,48)` ولا `bosta_type='RTO'` في أي وقت — **ولا (v2.2.0) `EXCHANGE` بحدث `state=23`** (In-Return: نفس تعريف تاب In-Return في الهب وWorker `Bosta-Webhook-Status-Receiver` ≥ 1.11.0).
 
 - 🔴 **مش «آخر حالة = 47/3»** — بعد التأجيل الشحنة بتتحرك (24 · 20 · 41)؛ ده رجّع شحنة واحدة بس من 25 يوم (15-10-2026).
 - الوحدة = **(رقم تتبع × حدث تأجيل)** — `event_id` = `bosta_webhook_events.id` لآخر تأجيل. تأجيل جديد = صف متابعة جديد.
